@@ -118,7 +118,9 @@ stateDiagram-v2
 
 For ongoing goals, recurrence follows the goal's configured wall clock, including daylight saving transitions. Schedule-only amendments preserve prompt identities and approval; content changes generate a new proposed protocol. Historical outcomes remain separate from new scheduled occurrences. A finite goal's review date is a cycle boundary, not an expiry rule applied to every recurring goal.
 
-Implementation: [goal models](src/life_os/models.py), [lifecycle engine](src/life_os/lifecycle.py), [store](src/life_os/store.py), and [lifecycle tests](tests/test_ongoing_goals.py).
+**Calendar recurrence semantics:** the first monthly, quarterly, or yearly check-in remains one day before the end of the first interval, capped by the review date for a finite cycle. Every later occurrence is calculated from that original first due date, with a clamp only in months where its day does not exist. For example, a January 1 start gives January 31 → February 28 → March 31; a December 31 start gives January 30 → February 28 → March 30. This preserves the existing first-due convention rather than silently changing it to the goal's start day. Existing materialized check-ins are not automatically rewritten by this scheduling fix.
+
+Implementation: [goal models](src/life_os/models.py), [lifecycle engine](src/life_os/lifecycle.py), [store](src/life_os/store.py), [ongoing-goal tests](tests/test_ongoing_goals.py), and [calendar-recurrence tests](tests/test_calendar_recurrence.py).
 
 ## Agent request flow
 
