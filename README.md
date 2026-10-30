@@ -464,6 +464,7 @@ python scripts/check_public_tree.py
 # Web app
 cd mobile
 pnpm typecheck
+pnpm test:proxy
 pnpm build
 pnpm start
 ```
