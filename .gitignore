@@ -1,0 +1,36 @@
+# Credentials and personal runtime data
+.env*
+!.env.example
+!**/.env.example
+*.pem
+*.key
+*credentials*.json
+*token*.json
+private/
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+*.sqlite3-*
+*_attachments/
+# Build and development files
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+node_modules/
+.next/
+.vinext/
+dist/
+out/
+coverage/
+*.tsbuildinfo
+.DS_Store
+.wrangler/
+.openai/
+.vercel/
+work/
+
+next-env.d.ts
