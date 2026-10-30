@@ -18,3 +18,7 @@ The repository is scanned with Gitleaks and a public-tree check before publicati
 - Do not publish an instance without providing authentication, HTTPS, secret management, backups, and an appropriate access model.
 
 Never post a real key or private record in a public issue. Report a vulnerability through the repository's private security reporting option if available; otherwise open an issue containing only a high-level request for a private reporting channel. If a credential is exposed, revoke it with the provider; deleting a commit does not revoke it.
+
+## Proxy routing boundary
+
+The web proxy accepts only `/health` and paths inside `/v1/` on the configured backend origin. It checks encoded path forms and the normalized destination before attaching credentials, rejects ambiguous routing inputs, and does not follow upstream redirects. Query values are treated as data. Run `pnpm --dir mobile test:proxy` for the route-handler regression suite. This routing restriction is defense in depth; it does not replace authentication for a hosted web app.

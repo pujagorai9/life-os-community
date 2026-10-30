@@ -9,7 +9,8 @@
     "dev": "next dev --hostname 127.0.0.1 --port 3000",
     "build": "next build",
     "start": "next start --hostname 127.0.0.1 --port 3000",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:proxy": "node --test tests/api-proxy.test.mjs"
   },
   "dependencies": {
     "react": "19.2.6",
