@@ -414,17 +414,18 @@ def schedule_protocol(
             occurrences = [goal.review_at] if goal.review_at is not None else []
         else:
             first = _first_recurring_due_at(
-                anchor, (end if goal.review_at else end + timedelta(days=370)), prompt.cadence, prompt.preferred_time
+                anchor, goal.review_at, prompt.cadence, prompt.preferred_time
             )
-            if first < goal.start_at:
-                first = _next_occurrence(first, prompt.cadence)
             occurrences = []
+            index = 0
             occurrence = first
-            while occurrence < start:
-                occurrence = _next_occurrence(occurrence, prompt.cadence)
+            while occurrence < max(start, goal.start_at):
+                index += 1
+                occurrence = _occurrence_at(first, prompt.cadence, index)
             while occurrence <= end and len(occurrences) < 5000:
                 occurrences.append(occurrence)
-                occurrence = _next_occurrence(occurrence, prompt.cadence)
+                index += 1
+                occurrence = _occurrence_at(first, prompt.cadence, index)
         check_ins.extend(
             ScheduledCheckIn(
                 id=str(uuid.uuid4()),
@@ -446,7 +447,7 @@ def schedule_protocol(
 
 def _first_recurring_due_at(
     start_at: datetime,
-    review_at: datetime,
+    review_at: datetime | None,
     cadence: TrackingCadence,
     preferred_time: str | None,
 ) -> datetime:
@@ -454,14 +455,18 @@ def _first_recurring_due_at(
     if cadence == TrackingCadence.DAILY:
         return first
     if cadence == TrackingCadence.WEEKLY:
-        return min(first + timedelta(days=6), review_at)
-    if cadence == TrackingCadence.MONTHLY:
-        return min(_add_months(first, 1) - timedelta(days=1), review_at)
-    if cadence == TrackingCadence.QUARTERLY:
-        return min(_add_months(first, 3) - timedelta(days=1), review_at)
-    if cadence == TrackingCadence.YEARLY:
-        return min(_add_months(first, 12) - timedelta(days=1), review_at)
-    raise ValueError(f"Unsupported recurring cadence: {cadence}")
+        first += timedelta(days=6)
+    elif cadence == TrackingCadence.MONTHLY:
+        first = _add_months(first, 1) - timedelta(days=1)
+    elif cadence == TrackingCadence.QUARTERLY:
+        first = _add_months(first, 3) - timedelta(days=1)
+    elif cadence == TrackingCadence.YEARLY:
+        first = _add_months(first, 12) - timedelta(days=1)
+    else:
+        raise ValueError(f"Unsupported recurring cadence: {cadence}")
+    # Finite cycles can end before their first full period. A rolling query's
+    # end is only a filter, never a recurrence anchor for an ongoing goal.
+    return min(first, review_at) if review_at is not None else first
 
 
 def _with_preferred_time(value: datetime, preferred_time: str | None) -> datetime:
@@ -474,17 +479,19 @@ def _with_preferred_time(value: datetime, preferred_time: str | None) -> datetim
         raise ValueError("preferred_time must use HH:MM format") from None
 
 
-def _next_occurrence(value: datetime, cadence: TrackingCadence) -> datetime:
+def _occurrence_at(first: datetime, cadence: TrackingCadence, index: int) -> datetime:
+    """Clamp this occurrence only; never carry a shortened month into the next."""
     if cadence == TrackingCadence.DAILY:
-        return value + timedelta(days=1)
+        return first + timedelta(days=index)
     if cadence == TrackingCadence.WEEKLY:
-        return value + timedelta(days=7)
-    if cadence == TrackingCadence.MONTHLY:
-        return _add_months(value, 1)
-    if cadence == TrackingCadence.QUARTERLY:
-        return _add_months(value, 3)
-    if cadence == TrackingCadence.YEARLY:
-        return _add_months(value, 12)
+        return first + timedelta(days=7 * index)
+    months = {
+        TrackingCadence.MONTHLY: 1,
+        TrackingCadence.QUARTERLY: 3,
+        TrackingCadence.YEARLY: 12,
+    }
+    if cadence in months:
+        return _add_months(first, months[cadence] * index)
     raise ValueError(f"Unsupported recurring cadence: {cadence}")
 
 
